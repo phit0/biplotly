@@ -1,0 +1,18 @@
+Package: biplotly
+Title: Biplots from single value decomposition
+Description: A flexible way of vizualizing principal components of high dimensional data with plotly
+Version: 1.0
+Authors@R: c(person(given = "Philipp",
+           family = "Schad",
+           role = c("aut", "cre"),
+           email = "Philippschad93@hotmail.de"))
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.1.1
+Licence: MIT
+Imports:
+  plotly,
+  dplyr
+Depends: 
+    R (>= 2.10)
+    
