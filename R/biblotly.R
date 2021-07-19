@@ -49,8 +49,10 @@ makeSVDtbl  <- function(data, color, components, alpha = 0) {
 }
 
 biplotly <- function(data, color, components = c(1,2),
-                     alpha = 0, title = "", arr.scale = 1, scale.pc = F,
+                     alpha = 0, title = "", arr.scale = 0.02, scale.pc = F,
                      colorPalette = "RdYlBu") {
+  
+  assertthat::assert_that(is.data.frame(data))
   
   # create dataframe for plotting
   svdtbl <- makeSVDtbl(data = data,
@@ -87,24 +89,26 @@ biplotly <- function(data, color, components = c(1,2),
   }
   
   # plot
-  p <- plotly::plot_ly(bi_df) %>%
+  p <- plotly::plot_ly(na.omit(bi_df)) %>%
     # arrow ends
     plotly::add_markers(x = ~H1 * arr.scale,
                         y = ~H2 * arr.scale,
                         type = 'scatter',
                         text = ~variable,
-                        name = "Variable",
+                        name = "Variable loadings",
                         marker = list(symbol = 'star-dot', color = 'black')) %>%
         # plot the scaled loadings H (arrows) 
     plotly::add_segments(x = 0, y = 0,
                          xend = ~H1 * arr.scale, 
                          yend = ~H2 * arr.scale,
-                         name = "Loadings",
+                         showlegend = FALSE,
+                         name = "",
                          alpha = 1,
                          color = I('grey')) %>%
     # plot scaled PCs G
-    plotly::add_markers(x = ~G1, y = ~G2,
-                color = ~col,  alpha = 0.9, type = 'scatter',
+    plotly::add_markers(data = bi_df,
+                x = ~G1, y = ~G2,
+                color = ~col,  alpha = 1, type = 'scatter',
                 colors = colorPalette,
                 text = ~col,
                 marker = list(size = 4)) %>%
