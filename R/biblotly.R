@@ -14,9 +14,6 @@ makeSVDtbl  <- function(data, color, components, alpha = 0) {
   Z <- scale(data, center = TRUE, scale = TRUE)
   svd_obj <- svd(Z)
   
-  # pc.a <- choose[1]
-  # pc.b <- choose[2]
-  
   A <- svd_obj$v
   l <- svd_obj$d
   U <- svd_obj$u
@@ -49,10 +46,13 @@ makeSVDtbl  <- function(data, color, components, alpha = 0) {
 }
 
 biplotly <- function(data, color, components = c(1,2),
-                     alpha = 0, title = "", arr.scale = 0.02, scale.pc = F,
-                     colorPalette = "RdYlBu") {
+                     alpha = 0, title = "", arr.scale = 1, scale.pc = F,
+                     colorPalette = "RdYlBu", opacity = 1) {
   
+  nc <- length(components)
   assertthat::assert_that(is.data.frame(data))
+  assertthat::assert_that(nc == 2 | nc == 3)
+  assertthat::assert_that(nc == length(unique(components)))
   
   # create dataframe for plotting
   svdtbl <- makeSVDtbl(data = data,
@@ -63,59 +63,99 @@ biplotly <- function(data, color, components = c(1,2),
   svd_obj <- svdtbl$svd_obj
   
   # save names 
-  name_pc.a <- colnames(bi_df)[2]
-  name_pc.b <- colnames(bi_df)[3]
-  name_var.a <- colnames(bi_df)[4]
-  name_var.b <- colnames(bi_df)[5]
+  name_pc <- paste0("Comp.", components)
   
-  # change colnames to standardnames
-  colnames(bi_df)[2:3] <- c("G1", "G2")
-  colnames(bi_df)[4:5] <- c("H1", "H2")
+  # change colnames to standardnames for plotly
+  colnames(bi_df) <- c("col", paste0("G", 1:nc), 
+                      paste0("H", 1:nc), "variable")
   
   # prepare axis labels for plot
   pcsd <- svd_obj$d/sqrt(nrow(svd_obj$u) - 1)
   pcvar <- pcsd^2
-  pvar_pc.1 <- round(pcvar[components[1]] / sum(pcvar), digits = 4) * 100
-  pvar_pc.2 <- round(pcvar[components[2]] / sum(pcvar), digits =  4) * 100
+  pvar_pc <- round(pcvar[components] / sum(pcvar), digits = 4) * 100
   
   if (scale.pc) {
     bi_df$PC_1 <- scale(bi_df$G1)
     bi_df$PC_2 <- scale(bi_df$G2)
-    xlab <- paste("standardized ", name_pc.a, pvar_pc.1, "% of Variance")
-    ylab <- paste("standardized ", name_pc.b, pvar_pc.2, "% of Variance")
+    xlab <- paste("standardized ", name_pc[1], pvar_pc[1], "% of Variance")
+    ylab <- paste("standardized ", name_pc[2], pvar_pc[2], "% of Variance")
+    zlab <- paste("standardized ", name_pc[3], pvar_pc[3], "% of Variance")
   } else {
-    xlab <- paste(name_pc.a, "(", pvar_pc.1, "% of Variance)")
-    ylab <- paste(name_pc.b, "(", pvar_pc.2, "% of Variance)")
+    xlab <- paste(name_pc[1], "(", pvar_pc[1], "% of Variance)")
+    ylab <- paste(name_pc[2], "(", pvar_pc[2], "% of Variance)")
+    zlab <- paste(name_pc[3], "(", pvar_pc[3], "% of Variance)")
   }
   
-  # plot
-  p <- plotly::plot_ly(na.omit(bi_df)) %>%
-    # arrow ends
-    plotly::add_markers(x = ~H1 * arr.scale,
-                        y = ~H2 * arr.scale,
-                        type = 'scatter',
-                        text = ~variable,
-                        name = "Variable loadings",
-                        marker = list(symbol = 'star-dot', color = 'black')) %>%
-        # plot the scaled loadings H (arrows) 
-    plotly::add_segments(x = 0, y = 0,
-                         xend = ~H1 * arr.scale, 
-                         yend = ~H2 * arr.scale,
-                         showlegend = FALSE,
-                         name = "",
-                         alpha = 1,
-                         color = I('grey')) %>%
-    # plot scaled PCs G
-    plotly::add_markers(data = bi_df,
-                x = ~G1, y = ~G2,
-                color = ~col,  alpha = 1, type = 'scatter',
-                colors = colorPalette,
-                text = ~col,
-                marker = list(size = 4)) %>%
- 
-    plotly::layout(xaxis = list(title = xlab),
-           yaxis = list(title = ylab),
-           title = title)
+  if (nc == 2) {
+    # 2d plot
+    p <- plotly::plot_ly(na.omit(bi_df)) %>%
+      # arrow ends
+      plotly::add_markers(x = ~H1 * arr.scale,
+                          y = ~H2 * arr.scale,
+                          type = 'scatter',
+                          text = ~variable,
+                          hoverinfo = "text",
+                          showlegend = FALSE,
+                          marker = list(symbol = "x",
+                                        color = 'white', 
+                                        alpha = '0.1')) %>%
+      # plot the scaled loadings H (arrows)
+      plotly::add_annotations(ax = 0, ay = 0,
+                              x = ~H1 * arr.scale, 
+                              y = ~H2 * arr.scale,
+                              xref = "x", yref = "y",
+                              axref = "x", ayref = "y",
+                              showarrow = TRUE,
+                              arrowhead = 2,
+                              arrowsize = .1,
+                              arrowcolor = "black",
+                              text = "",
+                              hoverinfo = "text",
+                              alpha = 1,
+                              color = I('green')) %>%
+      # plot scaled PCs G
+      plotly::add_markers(data = bi_df,
+                          x = ~G1, y = ~G2,
+                          color = ~col,  alpha = 1, type = 'scatter',
+                          colors = colorPalette,
+                          opacity = opacity,
+                          hoverinfo = "none",
+                          text = ~col,
+                          marker = list(size = 4)) %>%
+      
+      plotly::layout(xaxis = list(title = xlab),
+                     yaxis = list(title = ylab),
+                     title = title)
+  } else if (nc == 3) {
+    # 3d plot
+    p <- plotly::plot_ly(na.omit(bi_df)) %>%
+      # plot scaled PCs G
+      plotly::add_markers(data = bi_df,
+                          x = ~G1,
+                          y = ~G2,
+                          z = ~G3,
+                          color = ~col,  opacity = opacity,
+                          type = 'scatter',
+                          colors = colorPalette,
+                          hoverinfo = "none",
+                          text = ~col,
+                          marker = list(size = 2)) %>%
+      plotly::layout(scene = list(xaxis = list(title = xlab),
+                                  yaxis = list(title = ylab),
+                                  zaxis = list(title = zlab)),
+                     title = title)
+      
+      for (i in 1:length(na.omit(bi_df$H1))) {
+      p <- p %>% plotly::add_trace(type = "scatter3d", mode = "lines", 
+                              line = list(color = "black", width = 4),
+                              showlegend = FALSE,
+                              hoverinfo = "text",
+                              text = bi_df$variable[i],
+                          x = c(0, bi_df$H1[i] * arr.scale),
+                          y = c(0, bi_df$H2[i] * arr.scale),
+                          z = c(0, bi_df$H3[i] * arr.scale)) 
+      }
+    }
 
-  return(p)
+  print(p)
 }
