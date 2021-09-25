@@ -1,4 +1,4 @@
 library(testthat)
-library(biplotly)
+library(triplotly)
 
-test_check("biplotly")
+test_check("triplotly")

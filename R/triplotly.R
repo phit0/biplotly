@@ -45,7 +45,7 @@ makeSVDtbl  <- function(data, color, components, alpha = 0) {
               svd_obj = svd_obj))
 }
 
-biplotly <- function(data, color, components = c(1,2),
+triplotly <- function(data, color, components = c(1,2),
                      alpha = 0, title = "", arr.scale = 1, scale.pc = F,
                      colorPalette = "RdYlBu", opacity = 1) {
   
