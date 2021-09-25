@@ -33,15 +33,7 @@ triplotly(mtcars, color = "cyl",
          components = c(1, 2, 3), alpha = 1, 
          arr.scale = 1)
 
-# big 5 personality data
-big5 <- read.csv("BIG5/data.csv", sep = "\t")
-codes <- scan("BIG5/codebook.txt",
-              what = "character",
-              sep = "\n",
-              skip = 4, nmax = 50) %>%
-  lapply(function(x){unlist(stringr::str_split(x, "\\t"))[2]})
-
-colnames(big5)[8:ncol(big5)] <- codes
+data("big5")
 big5$gender <- as.factor(big5$gender)
 
 triplotly(big5[, c(4, 8:ncol(big5))], color = "gender",

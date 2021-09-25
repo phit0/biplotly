@@ -1,13 +1,15 @@
-#' Personality questionary data from https://openpsychometrics.org/_rawdata/
+#' Personality questionary data 
 #' 
 #' Answers to 50 lickert rated statements from 19719 participants.
-#' The test can be made here: https://openpsychometrics.org/tests/IPIP-BFFM/
+#' The test can be made here: \url{https://openpsychometrics.org/tests/IPIP-BFFM/}
 #' 
 #' This data was collected (c. 2012) through on interactive online personality 
 #' test. Participants were informed that their responses would be recorded and 
 #' used for research at the begining of the test and asked to confirm their 
 #' consent at the end of the test.
-#' 
+#'
+#' @source \url{https://openpsychometrics.org/_rawdata/}
+#'
 #' @format A tibble with 19719 rows and 57 variables:
 #' \describe{
 #'   \item{race}{Chosen from a drop down menu. 1=Mixed Race, 2=Arctic (Siberian, Eskimo),
