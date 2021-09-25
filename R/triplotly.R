@@ -51,7 +51,9 @@ triplotly <- function(data, color, components = c(1,2),
   
   nc <- length(components)
   assertthat::assert_that(is.data.frame(data))
-  assertthat::assert_that(nc == 2 | nc == 3)
+  assertthat::assert_that(nc == 2 | nc == 3,
+                          msg = paste("components =", components,
+                                      "Please, select two or three components"))
   assertthat::assert_that(nc == length(unique(components)))
   
   # create dataframe for plotting
@@ -155,7 +157,7 @@ triplotly <- function(data, color, components = c(1,2),
                           y = c(0, bi_df$H2[i] * arr.scale),
                           z = c(0, bi_df$H3[i] * arr.scale)) 
       }
-    }
+  }
 
   print(p)
 }
