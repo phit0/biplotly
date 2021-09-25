@@ -1,0 +1,32 @@
+#' Personality questionary data from https://openpsychometrics.org/_rawdata/
+#' 
+#' Answers to 50 lickert rated statements from 19719 participants.
+#' The test can be made here: https://openpsychometrics.org/tests/IPIP-BFFM/
+#' 
+#' This data was collected (c. 2012) through on interactive online personality 
+#' test. Participants were informed that their responses would be recorded and 
+#' used for research at the begining of the test and asked to confirm their 
+#' consent at the end of the test.
+#' 
+#' @format A tibble with 19719 rows and 57 variables:
+#' \describe{
+#'   \item{race}{Chosen from a drop down menu. 1=Mixed Race, 2=Arctic (Siberian, Eskimo),
+#'    3=Caucasian (European), 4=Caucasian (Indian), 5=Caucasian (Middle East),
+#'     6=Caucasian (North African, Other), 7=Indigenous Australian, 8=Native American,
+#'      9=North East Asian (Mongol, Tibetan, Korean Japanese, etc),
+#'       10=Pacific (Polynesian, Micronesian, etc),
+#'        11=South East Asian (Chinese, Thai, Malay, Filipino, etc),
+#'         12=West African, Bushmen, Ethiopian, 13=Other (0=missed)}
+#'   \item{age}{entered as text (individuals reporting age < 13 were not recorded)}
+#'   \item{engat}{Response to "is English your native language?". 1=yes, 2=no (0=missed)}
+#'   \item{gender}{gender	Chosen from a drop down menu. 1=Male, 2=Female, 3=Other (0=missed)}
+#'   \item{hand}{"What hand do you use to write with?". 1=Right, 2=Left, 3=Both (0=missed)}
+#'   \item{country}{The participant's technical location. ISO country code.}
+#'   \item{source}{How the participant came to the test. Based on HTTP Referer.
+#'    1=from another page on the test website, 2=from google, 3=from facebook, 
+#'    4=from any url with ".edu" in its domain name (e.g. xxx.edu, xxx.edu.au),
+#'     6=other source, or HTTP Referer not provided.}
+#'   \item{...}{+ the 50 questions rated on a five point scale where 1=Disagree,
+#'    3=Neutral, 5=Agree (0=missed)}
+#' }
+"big5"
