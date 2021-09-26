@@ -1,49 +1,55 @@
-
-makeSVDtbl  <- function(data, color, components, alpha = 0) {
-  
-  if (color %in% colnames(data)) {
-    cl <- color
-    color <- data[color]
-    data <- data[, colnames(data) != cl]
-  } else if (is.character(color)) {
-    stop(paste0("\"", color, "\" does not match any column of the data."))
-  }
-  
-  
-  # scale data & calculate single value decomposition
-  Z <- scale(data, center = TRUE, scale = TRUE)
-  svd_obj <- svd(Z)
-  
-  A <- svd_obj$v
-  l <- svd_obj$d
-  U <- svd_obj$u
-  X <- U%*%diag(l)%*%t(A)
-  
-  # G = ULambda^alpha
-  G <- as.data.frame(U[, components]%*%diag(l[components]^alpha))
-  colnames(G) <- paste0("G", components)
-  
-  
-  # H' = Lambda^(1-alpha)A'
-  H <- as.data.frame(t(diag(l[components]^(1 - alpha)) %*% 
-                         t(A[, components])))
-  colnames(H) <- paste0("H", components)
-  H <- data.frame(H, variable = colnames(data)) #column for variable names
-  
-  # Matrix of NAs
-  na_mat <- matrix(rep(NA, (nrow(G) - nrow(H))* ncol(H)),
-                   ncol = ncol(H))
-  colnames(na_mat) <- colnames(H)
-  
-  H <- rbind(H, na_mat)
-  
-  # Include scaled 
-  df <- cbind(color, G, H)
-  colnames(df)[1] <- "col"
-  
-  return(list(df = df, 
-              svd_obj = svd_obj))
-}
+svd_tbl <- R6::R6Class("svd_tbl",
+    public = list(
+      svd_obj = NULL,
+      GH = NULL,
+      bi_df = NULL,
+      initialize = function(data, color, components, alpha = 0) {
+        
+        if (color %in% colnames(data)) {
+          cl <- color
+          color <- data[color]
+          data <- data[, colnames(data) != cl]
+        } else if (is.character(color)) {
+          stop(paste0("\"", color, "\" does not match any column of the data."))
+        }
+        self$doSVD(data)
+        self$calcBi_df(data, components, alpha)
+        self$addCol(color)
+      },
+      doSVD = function(data) {
+        # scale data & calculate single value decomposition
+        Z <- scale(data, center = TRUE, scale = TRUE)
+        self$svd_obj <- svd(Z)
+      },
+      calcBi_df = function(data, components, alpha) {
+        A <- self$svd_obj$v
+        l <- self$svd_obj$d
+        U <- self$svd_obj$u
+        # X <- U%*%diag(l)%*%t(A)
+        
+        # G = ULambda^alpha
+        G <- as.data.frame(U[, components]%*%diag(l[components]^alpha))
+        colnames(G) <- paste0("G", components)
+        
+        # H' = Lambda^(1-alpha)A'
+        H <- as.data.frame(t(diag(l[components]^(1 - alpha)) %*% 
+                               t(A[, components])))
+        colnames(H) <- paste0("H", components)
+        H <- data.frame(H, variable = colnames(data)) #column for variable names
+        
+        # Matrix of NAs
+        na_mat <- matrix(rep(NA, (nrow(G) - nrow(H))* ncol(H)),
+                         ncol = ncol(H))
+        colnames(na_mat) <- colnames(H)
+        H <- rbind(H, na_mat)
+        
+        # join
+        self$GH <- cbind(G, H)
+      },
+      addCol = function(color) {
+        self$bi_df <- cbind(col = color, self$GH)
+      }
+    ))
 
 triplotly <- function(data, color, components = c(1,2),
                      alpha = 0, title = "", arr.scale = 1, scale.pc = F,
@@ -56,13 +62,13 @@ triplotly <- function(data, color, components = c(1,2),
                                       "Please, select two or three components"))
   assertthat::assert_that(nc == length(unique(components)))
   
-  # create dataframe for plotting
-  svdtbl <- makeSVDtbl(data = data,
-                      color = color,
-                      components = components,
-                      alpha = alpha)
-  bi_df <- svdtbl$df
-  svd_obj <- svdtbl$svd_obj
+  if (all(class(data) != c("svd_tbl", "R6"))) {
+    # create svdtbl for plotting
+    data <- svd_tbl$new(data, color, components)
+  }
+
+  bi_df <- data$bi_df
+  svd_obj <- data$svd_obj
   
   # save names 
   name_pc <- paste0("Comp.", components)
