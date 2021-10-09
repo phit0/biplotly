@@ -1,27 +1,82 @@
 svd_tbl <- R6::R6Class("svd_tbl",
     public = list(
       svd_obj = NULL,
-      GH = NULL,
       bi_df = NULL,
-      initialize = function(data, color, components, alpha = 0) {
+      data = NULL,
+      X = NULL,
+      GH = NULL,
+      pcs = NULL,
+      factors = NULL,
+      group_by = NULL,
+      alpha = NULL,
+      
+      initialize = function(data, factors, group_by,
+                            components, alpha = 0) {
         
-        if (color %in% colnames(data)) {
-          cl <- color
-          color <- data[color]
-          data <- data[, colnames(data) != cl]
-        } else if (is.character(color)) {
-          stop(paste0("\"", color, "\" does not match any column of the data."))
+       # assertthat::assert_that(all(factors %in% colnames(data)))
+        self$factors <- factors
+        if (group_by %in% colnames(data)) {
+          col <- data[group_by]
+        } else {
+          group_by <- factors[1]
+          col <- data[group_by]
         }
         self$doSVD(data)
-        self$calcBi_df(data, components, alpha)
-        self$addCol(color)
+        self$calcBi_df(components, group_by, alpha)
       },
+      
+      data_sanity = function(data) {
+        # sanity checks on the data set
+        nacols <- apply(data, 2, function(x) all(is.na(x)))
+        if (any(nacols)) {
+          message(paste("Column", which(nacols),
+                        "is empty and will be removed"))
+          data <- data[, !nacols]
+        }
+        # stopifnot(all(self$factors %in% colnames(data)))
+        
+        if (!is.numeric(self$factors)) {
+        assertthat::assert_that(all(self$factors %in% colnames(data)), 
+            msg = paste("The factors",
+                        self$factors[which(!self$factors %in% colnames(data))],
+                        "do not match the data header..."))
+        }
+        
+        X <- data %>% dplyr::select(!dplyr::all_of(self$factors))
+        
+        naInRow <- which(is.na(X), arr.ind = TRUE)
+        if (length(naInRow) != 0) {
+          message(paste("Rows", naInRow[, 1], "has NAs and will be removed"))
+          X <- X[-naInRow[, 1], ]
+          data <- data[-naInRow[, 1], ]
+        }
+        constcols <- apply(X, 2, function(x) var(x) < 1e-17)
+        if (any(constcols)) {
+          message(paste("Column", which(constcols),
+                        "is constant and will be removed"))
+          X <- X[, !constcols]
+        }
+        # add data
+        self$data <- data
+        # add X
+        self$X <- X
+        invisible(self)
+      },
+      
       doSVD = function(data) {
+        self$data_sanity(data) # if updated
         # scale data & calculate single value decomposition
-        Z <- scale(data, center = TRUE, scale = TRUE)
+        Z <- scale(self$X, center = TRUE, scale = TRUE)
         self$svd_obj <- svd(Z)
+        message("calculating svd")
+        invisible(self)
       },
-      calcBi_df = function(data, components, alpha) {
+      
+      calcBi_df = function(components, group_by, alpha) {
+        self$pcs <- components
+        self$group_by <- group_by
+        self$alpha <- alpha
+        col <- self$data[group_by]
         A <- self$svd_obj$v
         l <- self$svd_obj$d
         U <- self$svd_obj$u
@@ -35,36 +90,56 @@ svd_tbl <- R6::R6Class("svd_tbl",
         H <- as.data.frame(t(diag(l[components]^(1 - alpha)) %*% 
                                t(A[, components])))
         colnames(H) <- paste0("H", components)
-        H <- data.frame(H, variable = colnames(data)) #column for variable names
+        H <- data.frame(H, variable = colnames(self$X)) #column for variable names
         
         # Matrix of NAs
         na_mat <- matrix(rep(NA, (nrow(G) - nrow(H))* ncol(H)),
                          ncol = ncol(H))
         colnames(na_mat) <- colnames(H)
-        H <- rbind(H, na_mat)
         
-        # join
+        H <- rbind(H, na_mat)
+        # save
         self$GH <- cbind(G, H)
+        # join
+        self$bi_df <- cbind(col, G, H)
+        message(colnames(self$bi_df))
+        invisible(self)
       },
-      addCol = function(color) {
-        self$bi_df <- cbind(col = color, self$GH)
+      # only update group_by
+      change_col = function(group_by) {
+        self$group_by <- group_by
+        self$bi_df <- cbind(self$data[group_by], self$GH)
+        invisible(self)
+      },
+      plot = function(arr.scale = 1,
+                      scale.pc = FALSE,
+                      colorPalette = "RdYlBu",
+                      opacity = 1,
+                      title = "") {
+        triplotly(self, self$factors, self$group_by, self$pcs, self$alpha,
+                  arr.scale = arr.scale,
+                  scale.pc = scale.pc,
+                  colorPalette = colorPalette,
+                  opacity = opacity,
+                  title = title)
       }
+    
     ))
 
-triplotly <- function(data, color, components = c(1,2),
+triplotly <- function(data, factors, group_by, components = c(1,2),
                      alpha = 0, title = "", arr.scale = 1, scale.pc = F,
                      colorPalette = "RdYlBu", opacity = 1) {
   
   nc <- length(components)
-  assertthat::assert_that(is.data.frame(data))
   assertthat::assert_that(nc == 2 | nc == 3,
-                          msg = paste("components =", components,
+                          msg = paste("components =", paste0(components, collapse = " "),
                                       "Please, select two or three components"))
   assertthat::assert_that(nc == length(unique(components)))
   
   if (all(class(data) != c("svd_tbl", "R6"))) {
+    assertthat::assert_that(is.data.frame(data))
     # create svdtbl for plotting
-    data <- svd_tbl$new(data, color, components)
+    data <- svd_tbl$new(data, factors, group_by, components)
   }
 
   bi_df <- data$bi_df
@@ -133,7 +208,8 @@ triplotly <- function(data, color, components = c(1,2),
       
       plotly::layout(xaxis = list(title = xlab),
                      yaxis = list(title = ylab),
-                     title = title)
+                     title = title, 
+                     legend=list(title=list(text=group_by)))
   } else if (nc == 3) {
     # 3d plot
     p <- plotly::plot_ly(na.omit(bi_df)) %>%
