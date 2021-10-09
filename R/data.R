@@ -12,14 +12,6 @@
 #'
 #' @format A tibble with 19719 rows and 57 variables:
 #' \describe{
-#'   \item{race}{Chosen from a drop down menu. 1=Mixed Race, 2=Arctic (Siberian, Eskimo),
-#'    3=Caucasian (European), 4=Caucasian (Indian), 5=Caucasian (Middle East),
-#'     6=Caucasian (North African, Other), 7=Indigenous Australian, 8=Native American,
-#'      9=North East Asian (Mongol, Tibetan, Korean Japanese, etc),
-#'       10=Pacific (Polynesian, Micronesian, etc),
-#'        11=South East Asian (Chinese, Thai, Malay, Filipino, etc),
-#'         12=West African, Bushmen, Ethiopian, 13=Other (0=missed)}
-#'   \item{age}{entered as text (individuals reporting age < 13 were not recorded)}
 #'   \item{engat}{Response to "is English your native language?". 1=yes, 2=no (0=missed)}
 #'   \item{gender}{gender	Chosen from a drop down menu. 1=Male, 2=Female, 3=Other (0=missed)}
 #'   \item{hand}{"What hand do you use to write with?". 1=Right, 2=Left, 3=Both (0=missed)}
