@@ -1,6 +1,9 @@
 library(shiny)
-devtools::load_all(".")
+library(triplotly)
+library(dplyr)
+#devtools::install_github("https://github.com/phit0/triplotly")
 data("big5")
+
 
 ui <- fluidPage(
   fileInput(inputId = "data", label = "Upload *.csv file",

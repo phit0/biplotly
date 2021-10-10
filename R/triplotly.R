@@ -1,3 +1,10 @@
+
+
+#' R6 constructor for the svd table
+#'
+#'
+#' @export
+#'
 svd_tbl <- R6::R6Class("svd_tbl",
     public = list(
       svd_obj = NULL,
@@ -25,6 +32,7 @@ svd_tbl <- R6::R6Class("svd_tbl",
         self$calcBi_df(components, group_by, alpha)
       },
       
+
       data_sanity = function(data) {
         # sanity checks on the data set
         nacols <- apply(data, 2, function(x) all(is.na(x)))
@@ -126,6 +134,23 @@ svd_tbl <- R6::R6Class("svd_tbl",
     
     ))
 
+#' PCA triplots
+#'
+#' @param data 
+#' @param factors 
+#' @param group_by 
+#' @param components 
+#' @param alpha 
+#' @param title 
+#' @param arr.scale 
+#' @param scale.pc 
+#' @param colorPalette 
+#' @param opacity 
+#'
+#' @return a graphic
+#' @export
+#'
+#' @examples
 triplotly <- function(data, factors, group_by, components = c(1,2),
                      alpha = 0, title = "", arr.scale = 1, scale.pc = F,
                      colorPalette = "RdYlBu", opacity = 1) {
