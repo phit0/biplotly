@@ -8,8 +8,9 @@ Authors@R: c(person(given = "Philipp",
            email = "Philippschad93@hotmail.de"))
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.2
 Licence: MIT
+LazyData: true
 Imports:
   plotly,
   assertthat,
