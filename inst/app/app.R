@@ -6,23 +6,38 @@ data("big5")
 
 
 ui <- fluidPage(
-  fileInput(inputId = "data", label = "Upload *.csv file",
-            placeholder = "big5_data", accept = ".csv"),
   
-  textInput("factors",
+  titlePanel("Triplotly - interactive PCA"),
+  "Shiny dashboard for the R-package triplotly 
+  (https://github.com/phit0/triplotly)",
+  
+  sidebarLayout(
+    sidebarPanel(
+      fileInput(inputId = "data", label = "Upload *.csv file",
+            placeholder = "big5_data", accept = ".csv"),
+      textInput("factors",
             "Columns not to be included in the svd (numeric, e.g. 1:4)", 
             placeholder = "1:5"),
-  actionButton(inputId = "ok", label = "OK"),
-  uiOutput("group"),
-  uiOutput("pcs"),
+      actionButton(inputId = "ok", label = "OK"),
+      uiOutput("group"),
+      uiOutput("pcs"),
   
-  sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
+      sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
               min = 0, max = 50, step = 1,value = 10, round = TRUE),
-  sliderInput(inputId = "alpha", label = "alpha",
-              min = 0, max = 1, step = 0.02, value = 1, round = TRUE),
-  
-  
-  plotly::plotlyOutput(outputId = "triplot")
+      sliderInput(inputId = "alpha", label = "alpha",
+              min = 0, max = 1, step = 0.02, value = 1, round = TRUE)
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel("triplot",
+                 plotly::plotlyOutput(outputId = "triplot",
+                                      height = "600px",)),
+        tabPanel("Comp. variances",
+                 plotly::plotlyOutput(outputId = "varplot",
+                                      width = "90%"))
+      )
+    )
+  )
 )
 
 #svd_tbl$debug("initialize")
@@ -76,6 +91,11 @@ server <- function(input, output, session) {
                              components = c(1, 2),
                              alpha = input$alpha)
       #message("number1")
+      # df for variance plot
+      rv$df <- data.frame(comp = 1:length(rv$svdtbl$pcvar),
+                          variance = rv$svdtbl$pcvar,
+                          p_var = rv$svdtbl$ppcvar,
+                          cp_var = cumsum(rv$svdtbl$ppcvar))
       })
     output$pcs <- renderUI({
       isolate({
@@ -98,7 +118,6 @@ server <- function(input, output, session) {
     rv$svdtbl$calcBi_df(components = as.numeric(input$pcs),
                         group_by = input$group,
                         alpha = input$alpha)
-      
     })
     })
   
@@ -111,6 +130,29 @@ server <- function(input, output, session) {
        #uu message("number2")
   }
   ) 
+  observeEvent(input$ok, ignoreNULL = FALSE, {
+    output$varplot <- plotly::renderPlotly({
+      plotly::plot_ly(rv$df) %>%
+        plotly::add_bars(x=~comp, y=~variance,
+                         text=~p_var,
+                         marker = list(color = "grey"),
+                         hoverinfo = "text") %>%
+        plotly::add_trace(x =~comp, y=~cp_var, yaxis = "y2",
+                          mode="lines+markers",
+                          type="scatter",
+                          text=~cp_var,
+                          hovertemplate = "%{text} %",
+                          line = list(color = "blue"),
+                          marker = list(color = "blue")) %>%
+        plotly::layout(yaxis2 = list(tickfont = list(color = "blue"),
+                                     overlaying = "y",
+                                     side = "right",
+                                     title = "cumulative variance [%]"),
+                       showlegend=FALSE,
+                       margin = list(r = 80))
+    })
+  })
+  
   
 }
 

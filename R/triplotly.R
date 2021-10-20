@@ -8,6 +8,8 @@
 svd_tbl <- R6::R6Class("svd_tbl",
     public = list(
       svd_obj = NULL,
+      pcvar = NULL,
+      ppcvar = NULL,
       bi_df = NULL,
       data = NULL,
       X = NULL,
@@ -76,7 +78,12 @@ svd_tbl <- R6::R6Class("svd_tbl",
         # scale data & calculate single value decomposition
         Z <- scale(self$X, center = TRUE, scale = TRUE)
         self$svd_obj <- svd(Z)
-        message("calculating svd")
+        # save pc variance
+        self$pcvar <- (self$svd_obj$d/sqrt(nrow(self$svd_obj$u) - 1))^2
+        self$ppcvar <- round(
+          self$pcvar / sum(self$pcvar),
+          digits = 4
+          ) * 100
         invisible(self)
       },
       
@@ -178,20 +185,17 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
                       paste0("H", 1:nc), "variable")
   
   # prepare axis labels for plot
-  pcsd <- svd_obj$d/sqrt(nrow(svd_obj$u) - 1)
-  pcvar <- pcsd^2
-  pvar_pc <- round(pcvar[components] / sum(pcvar), digits = 4) * 100
-  
+  ppcvar <- data$ppcvar[components]
   if (scale.pc) {
     bi_df$PC_1 <- scale(bi_df$G1)
     bi_df$PC_2 <- scale(bi_df$G2)
-    xlab <- paste("standardized ", name_pc[1], pvar_pc[1], "% of Variance")
-    ylab <- paste("standardized ", name_pc[2], pvar_pc[2], "% of Variance")
-    zlab <- paste("standardized ", name_pc[3], pvar_pc[3], "% of Variance")
+    xlab <- paste("standardized ", name_pc[1], ppcvar[1], "% of Variance")
+    ylab <- paste("standardized ", name_pc[2], ppcvar[2], "% of Variance")
+    zlab <- paste("standardized ", name_pc[3], ppcvar[3], "% of Variance")
   } else {
-    xlab <- paste(name_pc[1], "(", pvar_pc[1], "% of Variance)")
-    ylab <- paste(name_pc[2], "(", pvar_pc[2], "% of Variance)")
-    zlab <- paste(name_pc[3], "(", pvar_pc[3], "% of Variance)")
+    xlab <- paste(name_pc[1], "(", ppcvar[1], "% of Variance)")
+    ylab <- paste(name_pc[2], "(", ppcvar[2], "% of Variance)")
+    zlab <- paste(name_pc[3], "(", ppcvar[3], "% of Variance)")
   }
   
   if (nc == 2) {
