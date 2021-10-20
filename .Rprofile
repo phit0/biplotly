@@ -1,6 +1,6 @@
 local({
   r <- getOption("repos")
-  r["CRAN"] <-  "https://cloud.r-project.org/"
-  r["github"] <- "https://github.com/phit0/triplotly/"
+  r["CRAN"] <-   "https://cran.rstudio.com/"
+  r["github"] <- "https://github.com"
   options(repos = r)
 })
