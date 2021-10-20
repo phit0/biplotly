@@ -136,12 +136,12 @@ server <- function(input, output, session) {
         plotly::add_bars(x=~comp, y=~variance,
                          text=~p_var,
                          marker = list(color = "grey"),
-                         hoverinfo = "text") %>%
+                         hovertemplate = "%{text} %") %>%
         plotly::add_trace(x =~comp, y=~cp_var, yaxis = "y2",
                           mode="lines+markers",
                           type="scatter",
-                          text=~cp_var,
-                          hovertemplate = "%{text} %",
+                          text = ~cp_var,
+                          hoverinfo = "text",
                           line = list(color = "blue"),
                           marker = list(color = "blue")) %>%
         plotly::layout(yaxis2 = list(tickfont = list(color = "blue"),
