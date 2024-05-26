@@ -45,8 +45,8 @@ svd_tbl <- R6::R6Class(
       if(max(na_summary) == 100) {
         msg <- append(
           msg, 
-          paste("Column", names(na_summary)[na_summary == 100],
-                "is empty and will be removed")
+          paste("Column(s)", paste0(names(na_summary)[na_summary == 100], collapse = "\n"),
+                "are empty and will be removed")
         )
         
         data_raw <- data_raw %>%
@@ -67,8 +67,8 @@ svd_tbl <- R6::R6Class(
         msg <- append(
           msg, 
           list(
-            paste0("We dropped ", nrow(data_raw) - nrow(data), " rows"),
-            "The following columns contain most missing values:",
+            paste0("We dropped ", nrow(data_raw) - nrow(data), " rows \n
+            The following columns contain most missing values:", sep = "\n"),
             tibble(
               col = names(na_summary),
               pct_missing = na_summary
@@ -86,8 +86,8 @@ svd_tbl <- R6::R6Class(
       if (any(constcols)) {
         msg <- append(
           msg,
-          (paste("Column", which(constcols),
-                 "is constant and will be removed"))
+          paste("Column(s)", paste0(names(X)[constcols], collapse = "\n"),
+                 "are constant and will be removed", sep = "\n")
         )
         X <- X[, !constcols]
       }
@@ -97,7 +97,6 @@ svd_tbl <- R6::R6Class(
       # add X
       self$X <- X
       self$nonFactors <- colnames(X)
-      lapply(msg, print)
       self$msg <- msg
       
       invisible(self)
@@ -160,12 +159,16 @@ svd_tbl <- R6::R6Class(
                     scale.pc = FALSE,
                     colorPalette = "RdYlBu",
                     opacity = 1,
+                    size = 1,
+                    showLabels = FALSE,
                     title = "") {
       invisible(
         triplotly(self, self$factors, self$group_by, self$pcs, self$alpha,
                   arr.scale = arr.scale,
                   scale.pc = scale.pc,
                   colorPalette = colorPalette,
+                  size = size, 
+                  showLabels = showLabels,
                   opacity = opacity,
                   title = title)
       )
@@ -192,7 +195,7 @@ svd_tbl <- R6::R6Class(
 #' @examples
 triplotly <- function(data, factors, group_by, components = c(1,2),
                       alpha = 0, title = "", arr.scale = 1, scale.pc = F,
-                      colorPalette = "RdYlBu", opacity = 1) {
+                      colorPalette = "RdYlBu", opacity = 1, size = 1, showLabels) {
   
   nc <- length(components)
   assertthat::assert_that(nc == 2 | nc == 3,
@@ -210,7 +213,7 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
   svd_obj <- data$svd_obj
   
   # save names 
-  name_pc <- paste0("Comp.", components)
+  name_pc <- paste0("PC ", components)
   
   # change colnames to standardnames for plotly
   colnames(bi_df) <- c("group", paste0("G", 1:nc), 
@@ -225,9 +228,9 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
     ylab <- paste("standardized ", name_pc[2], ppcvar[2], "% of Variance")
     zlab <- paste("standardized ", name_pc[3], ppcvar[3], "% of Variance")
   } else {
-    xlab <- paste(name_pc[1], "(", ppcvar[1], "% of Variance)")
-    ylab <- paste(name_pc[2], "(", ppcvar[2], "% of Variance)")
-    zlab <- paste(name_pc[3], "(", ppcvar[3], "% of Variance)")
+    xlab <- paste(name_pc[1], "(", ppcvar[1], "% VAR)")
+    ylab <- paste(name_pc[2], "(", ppcvar[2], "% VAR)")
+    zlab <- paste(name_pc[3], "(", ppcvar[3], "% VAR)")
   }
   
   if (nc == 2) {
@@ -265,42 +268,56 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
                           opacity = opacity,
                           hoverinfo = "none",
                           text = ~group,
-                          marker = list(size = 4)) %>%
+                          marker = list(size = size)) %>%
       
       plotly::layout(xaxis = list(title = xlab),
                      yaxis = list(title = ylab),
                      title = title, 
                      legend=list(title=list(text=group_by)))
+    
   } else if (nc == 3) {
     # 3d plot
     p <- plotly::plot_ly(na.omit(bi_df)) %>%
+      
       # plot scaled PCs G
-      plotly::add_markers(data = bi_df,
+      plotly::add_markers(data = bi_df, 
                           x = ~G1,
                           y = ~G2,
                           z = ~G3,
-                          color = ~group,  opacity = opacity,
+                          color = ~group,  
+                          opacity = opacity,
                           type = 'scatter',
                           colors = colorPalette,
                           hoverinfo = "none",
                           text = ~group,
-                          marker = list(size = 2)) %>%
+                          marker = list(size = size)) %>%
       plotly::layout(scene = list(xaxis = list(title = xlab),
                                   yaxis = list(title = ylab),
                                   zaxis = list(title = zlab)),
                      title = title)
-    
     for (i in 1:length(na.omit(bi_df$H1))) {
-      p <- p %>% plotly::add_trace(type = "scatter3d", mode = "lines", 
+      p <- p %>% plotly::add_trace(type = "scatter3d", mode = "lines",
                                    line = list(color = "black", width = 4),
                                    showlegend = FALSE,
                                    hoverinfo = "text",
                                    text = bi_df$variable[i],
                                    x = c(0, bi_df$H1[i] * arr.scale),
                                    y = c(0, bi_df$H2[i] * arr.scale),
-                                   z = c(0, bi_df$H3[i] * arr.scale)) 
+                                   z = c(0, bi_df$H3[i] * arr.scale)) %>% 
+       plotly::add_trace(
+         type = "cone",
+         x = bi_df$H1[i] * arr.scale * 1.01,
+         y = bi_df$H2[i] * arr.scale * 1.01,
+         z = bi_df$H3[i] * arr.scale * 1.01,
+         u = bi_df$H1[i] * arr.scale * 0.2,
+         v = bi_df$H2[i] * arr.scale * 0.2,
+         w = bi_df$H3[i] * arr.scale * 0.2,
+         colorscale = list(list(0, '#000000'), list(1, '#000000')),
+         anchor = "tip", #make cone tip be at endpoint
+         hoverinfo = "none",
+         showscale = FALSE
+      )
     }
   }
   invisible(p)
-  # print(p)
 }

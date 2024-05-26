@@ -3,13 +3,16 @@ tryUpload <- function(input_object) {
   msg <-  list()
   success <- TRUE
   tidy_message <- list(
-    "Reminder: Please provide a csv with", 
-    "\".\" decimals and \",\" separators in a",
-    "tidy format (https://doi.org/10.18637/jss.v059.i10)")
+    "Upload your own Data: Please provide a csv with \".\" decimals \n
+    and \",\" separators in a tidy format. (https://doi.org/10.18637/jss.v059.i10) \n
+    For PCA rows with empty values and constant columns will be dropped.")
   if (is.null(input_object)) {
     # example data big5
     data <- big5
-    msg <- tidy_message
+    msg <- append("Demo Data: Answers to 50 lickert rated statements from 19719 participants.\n
+                  Source:  https://openpsychometrics.org/_rawdata",
+                  tidy_message)
+                  
   } else {
     
     # uploaded custom data
@@ -64,4 +67,12 @@ tryUpload <- function(input_object) {
     success = success,
     start_group = start_group
   ))
+}
+
+prettylog <- function(x) {
+  if (any(class(x) %in% "character")) {
+    return(cat(x))
+  } else {
+    return(x)
+  }
 }

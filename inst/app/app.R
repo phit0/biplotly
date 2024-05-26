@@ -1,8 +1,10 @@
 library(shiny)
 library(shinyWidgets)
-devtools::load_all("../")
 library(dplyr)
-#devtools::install_github("https://github.com/phit0/triplotly")
+# remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
+#                         upgrade = "never")
+devtools::load_all("../")
+# library(triplotly)
 data("big5")
 
 
@@ -34,12 +36,20 @@ ui <- fluidPage(
       uiOutput("group"),
       uiOutput("pcs"),
       
-      sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
-                  min = 0, max = 50, step = 1,value = 10, round = TRUE),
-      # sliderInput(inputId = "alpha", label = "alpha",
-      #             min = 0, max = 1, step = 0.02, value = 1, round = TRUE),
-      sliderInput(inputId = "opacity", label = "transparency",
-                  min = 0, max = 1, step = 0.1, value = 1)
+      dropMenu(
+        tag = actionButton("figAdj", label = "figure adjustments"),
+        sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
+                    min = 0, max = 50, step = 1,value = 35, round = TRUE),
+        # sliderInput(inputId = "alpha", label = "alpha",
+        #             min = 0, max = 1, step = 0.02, value = 1, round = TRUE),
+        sliderInput(inputId = "size", label = "marker size",
+                    min = 0.5, max = 15, step = 1, value = 2),
+        sliderInput(inputId = "opacity", label = "transparency",
+                    min = 0, max = 1, step = 0.1, value = 1),
+        switchInput("showLabels", "", value = FALSE,
+                    onLabel = "hide Labels", 
+                    offLabel = "show Labels")
+      ),
     ),
     mainPanel(
       tabsetPanel(
@@ -60,7 +70,7 @@ server <- function(input, output, session) {
   
   rv <- reactiveValues()
   
-  observeEvent(input$data, ignoreNULL = F, {
+  observeEvent(input$data, ignoreNULL = F, ignoreInit = F, {
     
     upload <- tryUpload(input$data)
     rv$data <- upload$data
@@ -71,9 +81,9 @@ server <- function(input, output, session) {
       rv$data,
       factors = upload$factors
     )
-    rv$svdtbl$msg <- append(rv$svdtbl$msg, upload$msg)
+    rv$msg <- append(rv$svdtbl$msg, upload$msg)
     rv$uploadsuccess <- upload$success
-    
+
     output$uploadInfo <- renderUI({
       actionButton(
         inputId = "uploadInfo",
@@ -84,7 +94,7 @@ server <- function(input, output, session) {
     
     output$group <- renderUI({
       selectInput("group", "grouping variable",
-                  selected = rv$svdtbl$factors[1],
+                  selected = rv$start_group,
                   choices = rv$svdtbl$factors)
     })
     
@@ -118,20 +128,20 @@ server <- function(input, output, session) {
     )
     # df for variance plot
     rv$df <- data.frame(comp = 1:length(rv$svdtbl$pcvar),
-                        variance = rv$svdtbl$pcvar,
+                        Variance = rv$svdtbl$pcvar,
                         p_var = rv$svdtbl$ppcvar,
                         cp_var = cumsum(rv$svdtbl$ppcvar))
     
   })
   
-  observeEvent(input$uploadInfo, ignoreInit = TRUE, {
+  observeEvent(input$uploadInfo, ignoreInit = F, {
     
     showModal(modalDialog(
       title = ifelse(rv$uploadsuccess, 
                      "Upload successful: ", 
                      "Upload failed: "), 
-      lapply(rv$svdtbl$msg, function(x) {
-        renderPrint(x)
+      lapply(rv$msg, function(x) {
+        renderPrint(prettylog(x))
       })
     ))
   })
@@ -156,27 +166,29 @@ server <- function(input, output, session) {
   })
   
   observeEvent(
-    c(input$pcs, input$group, input$ok),
+    c(input$pcs, input$group, input$ok, input$showLabels),
     ignoreInit = TRUE, {
       rv$svdtbl$data_sanity(rv$data)
       rv$svdtbl$doSVD()
       rv$svdtbl$calcBi_df(as.integer(input$pcs), input$group, 1)
       rv$df <- data.frame(comp = 1:length(rv$svdtbl$pcvar),
-                          variance = rv$svdtbl$pcvar,
+                          Variance = rv$svdtbl$pcvar,
                           p_var = rv$svdtbl$ppcvar,
                           cp_var = cumsum(rv$svdtbl$ppcvar)) 
       
       output$triplot <- plotly::renderPlotly({
         rv$svdtbl$plot(
           arr.scale = input$arr_scale,
-          opacity = input$opacity
+          opacity = input$opacity,
+          size = input$size, 
+          showLabels = input$showLabels
           ) 
       })
     })
   
   output$varplot <- plotly::renderPlotly({
     plotly::plot_ly(rv$df) %>%
-      plotly::add_bars(x=~comp, y=~variance,
+      plotly::add_bars(x=~comp, y=~Variance,
                        text=~p_var,
                        marker = list(color = "grey"),
                        hovertemplate = "%{text} %") %>%
@@ -190,7 +202,7 @@ server <- function(input, output, session) {
       plotly::layout(yaxis2 = list(tickfont = list(color = "blue"),
                                    overlaying = "y",
                                    side = "right",
-                                   title = "cumulative variance [%]"),
+                                   title = "Cumulative Variance [%]"),
                      showlegend=FALSE,
                      margin = list(r = 80))
   })
