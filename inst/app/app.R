@@ -1,4 +1,4 @@
-# deployApp(appName = "triplotly")
+# rsconnect::deployApp(appDir = "inst/app", appName = "triplotly")
 library(shiny)
 library(shinyWidgets)
 library(dplyr)
@@ -143,7 +143,7 @@ server <- function(input, output, session) {
                      "Upload successful: ", 
                      "Upload failed: "), 
       lapply(rv$msg, function(x) {
-        renderPrint(prettylog(x))
+        renderPrint(triplotly:::prettylog(x))
       })
     ))
   })
