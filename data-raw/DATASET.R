@@ -1,5 +1,6 @@
 ## code to prepare `DATASET` dataset goes here
 # big 5 personality data
+library(dplyr)
 big5 <- read.csv("data-raw/data.csv", sep = "\t")
 codes <- scan("data-raw/codebook.txt",
               what = "character",
@@ -24,4 +25,8 @@ big5$hand[which(big5$hand == 2)] <- "Left"
 big5$hand[which(big5$hand == 3)] <- "Both"
 
 big5$source <- as.factor(big5$source)
-usethis::use_data(big5, overwrite = TRUE, compress = T)
+big5 <-  big5 %>% sample_n(size = 5000)
+
+usethis::use_data(
+  big5,
+  overwrite = TRUE, compress = T)

@@ -1,3 +1,4 @@
+# deployApp(appName = "triplotly")
 library(shiny)
 library(shinyWidgets)
 library(dplyr)
@@ -73,7 +74,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$data, ignoreNULL = F, ignoreInit = F, {
     
-    upload <- tryUpload(input$data)
+    upload <- triplotly:::tryUpload(input$data)
     rv$data <- upload$data
     rv$start_group <- upload$start_group
     
