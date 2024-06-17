@@ -5,7 +5,7 @@ A flexible way of visualizing principal components of high dimensional
 data with plotly
 
 ## App 
-An interactive shiny app is hosted here: https://github.com/phit0/triplotly  
+An interactive shiny app is hosted here: https://phit0.shinyapps.io/triplotly/  
 
 
 
