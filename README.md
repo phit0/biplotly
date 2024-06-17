@@ -1,7 +1,7 @@
 
 # triplotly
 
-A flexible way of vizualizing principal components of high dimensional
+A flexible way of visualizing principal components of high dimensional
 data with plotly
 
 ## App 
