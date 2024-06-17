@@ -4,7 +4,7 @@ library(dplyr)
 remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
                         upgrade = "never")
 # devtools::load_all("../")
-# library(triplotly)
+library(triplotly)
 data("big5")
 
 
