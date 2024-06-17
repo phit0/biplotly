@@ -1,9 +1,9 @@
 library(shiny)
 library(shinyWidgets)
 library(dplyr)
-# remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
-#                         upgrade = "never")
-devtools::load_all("../")
+remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
+                        upgrade = "never")
+# devtools::load_all("../")
 # library(triplotly)
 data("big5")
 
@@ -55,8 +55,9 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("triplot",
                  plotly::plotlyOutput(outputId = "triplot",
-                                      width = "100%",
-                                      height = "100%"), fill = FALSE),
+                                      width = "900px", 
+                                      height ="750px",
+                                      fill = FALSE)),
         tabPanel("Comp. variances",
                  plotly::plotlyOutput(outputId = "varplot",
                                       width = "90%"))
@@ -176,7 +177,8 @@ server <- function(input, output, session) {
                           p_var = rv$svdtbl$ppcvar,
                           cp_var = cumsum(rv$svdtbl$ppcvar)) 
       
-      output$triplot <- plotly::renderPlotly({
+      output$triplot <- plotly::renderPlotly(
+        {
         rv$svdtbl$plot(
           arr.scale = input$arr_scale,
           opacity = input$opacity,
