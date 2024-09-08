@@ -2,7 +2,7 @@
 % Please edit documentation in R/triplotly.R
 \name{triplotly}
 \alias{triplotly}
-\title{PCA triplots}
+\title{PCA bi- and triplots}
 \usage{
 triplotly(
   data,
@@ -14,33 +14,82 @@ triplotly(
   arr.scale = 1,
   scale.pc = F,
   colorPalette = "RdYlBu",
-  opacity = 1
+  opacity = 1,
+  size = 1,
+  showLabels
 )
 }
 \arguments{
 \item{data}{}
 
-\item{factors}{}
+\item{factors}{Wich columns of the provided data are used as factors.
+They will not be considered in the PCA but may be used as an argument to
+\code{group_by} by the user.}
 
-\item{group_by}{}
+\item{group_by}{Column of your \code{data} for the color group of the
+markers (dots).}
 
-\item{components}{}
+\item{components}{Which components to display.
+A vector of up to three values are possible.}
 
 \item{alpha}{}
 
-\item{title}{}
+\item{title}{Optional title fot the plot.}
 
-\item{arr.scale}{}
+\item{arr.scale}{Scaling factor for the arrows.}
 
 \item{scale.pc}{}
 
-\item{colorPalette}{}
+\item{colorPalette}{The \code{colors} argument passed to \code{\link[plotly:plot_ly]{plotly::plot_ly()}} i.e. a
+colorbrewer.org palette name (default is "RdYlBu").}
 
 \item{opacity}{}
 }
 \value{
-a graphic
+a plotly figure object that can be rendered with \code{\link[base:print]{base::print()}}
 }
 \description{
-PCA triplots
+PCA bi- and triplots
+}
+\examples{
+library(triplotly)
+data("iris")
+# 2d
+d2 <- triplotly(iris, factors = "Species", group_by = "Species",
+                components = c(1, 2), arr.scale = 0.02, size = 3)
+\dontrun{
+  print(d2)
+}
+
+# 3d
+d3 <- triplotly(data = iris, factors = "Species", group_by = "Species", 
+                components = c(1, 2, 3), arr.scale = 0.01, size = 3)
+\dontrun{
+  print(d3)
+}
+library(MASS)
+data("birthwt")
+?birthwt
+head(birthwt)
+birthwt$low <- as.factor(birthwt$low)
+colnames(birthwt) <- c(
+  "lower than 2.5 kg",
+  "mother's age in years.",
+  "mother's weight in pounds at last menstrual period.",
+  "mother's race (1 = white, 2 = black, 3 = other).",
+  "smoking status during pregnancy.",
+  "number of previous premature labours.",
+  "history of hypertension.",
+  "presence of uterine irritability.",
+  "number of physician visits during the first trimester.",
+  "birth weight in grams."
+)
+d3 <- triplotly(birthwt[, -10], factors = 1,
+                group_by = "lower than 2.5 kg",
+                colorPalette = "Set2",
+                components = c(1, 2, 3), arr.scale = 0.02,
+                size = 4)
+\dontrun{
+  print(d3)
+}
 }

@@ -70,9 +70,19 @@ tryUpload <- function(input_object) {
 }
 
 prettylog <- function(x) {
-  if (any(class(x) %in% "character")) {
+  if ("character" %in% class(x)) {
     return(cat(x))
   } else {
     return(x)
+  }
+}
+
+pretty_msg <- function(msgs) {
+  for (x in msgs) {
+    if (is.data.frame(x)) {
+      print(x)
+    } else {
+      message(x)
+    }
   }
 }

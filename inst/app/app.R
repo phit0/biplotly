@@ -2,8 +2,8 @@
 library(shiny)
 library(shinyWidgets)
 library(dplyr)
-remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
-                        upgrade = "never")
+# remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
+#                         upgrade = "never")
 # devtools::load_all("../")
 library(triplotly)
 data("big5")
@@ -67,7 +67,7 @@ ui <- fluidPage(
   )
 )
 
-#svd_tbl$debug("initialize")
+#trp$debug("initialize")
 server <- function(input, output, session) {
   
   rv <- reactiveValues()
@@ -79,11 +79,11 @@ server <- function(input, output, session) {
     rv$start_group <- upload$start_group
     
     # Intit svd object
-    rv$svdtbl <- triplotly::svd_tbl$new(
+    rv$trp_obj <- triplotly::trp$new(
       rv$data,
       factors = upload$factors
     )
-    rv$msg <- append(rv$svdtbl$msg, upload$msg)
+    rv$msg <- append(rv$trp_obj$msg, upload$msg)
     rv$uploadsuccess <- upload$success
 
     output$uploadInfo <- renderUI({
@@ -97,14 +97,14 @@ server <- function(input, output, session) {
     output$group <- renderUI({
       selectInput("group", "grouping variable",
                   selected = rv$start_group,
-                  choices = rv$svdtbl$factors)
+                  choices = rv$trp_obj$factors)
     })
     
     output$pcs <- renderUI({
       isolate({
         # reduce number of pcs to select
-        pc0.9 <- min(which(cumsum((rv$svdtbl$svd_obj$d) /
-                                    sum((rv$svdtbl$svd_obj$d))) > 0.9))
+        pc0.9 <- min(which(cumsum((rv$trp_obj$svd_obj$d) /
+                                    sum((rv$trp_obj$svd_obj$d))) > 0.9))
       })
       selectInput(inputId = "pcs", label = "Select 2 or 3 components",
                   multiple = TRUE, choices = 1:pc0.9, selected = c(1, 2, 3))
@@ -112,9 +112,9 @@ server <- function(input, output, session) {
     
     output$rmFctr <- renderUI({
       shinyWidgets::multiInput("rmFctr", "Remove Factor Variables from PCA",
-                               selected = rv$svdtbl$nonFactors,
-                               choiceNames = colnames(rv$svdtbl$data),
-                               choiceValues = colnames(rv$svdtbl$data),
+                               selected = rv$trp_obj$nonFactors,
+                               choiceNames = colnames(rv$trp_obj$data),
+                               choiceValues = colnames(rv$trp_obj$data),
                                options = list(
                                  non_selected_header = "Factors",
                                  selected_header = "Numbers"
@@ -122,17 +122,17 @@ server <- function(input, output, session) {
       )
     })
     
-    rv$svdtbl$doSVD()
-    rv$svdtbl$calcBi_df(
+    rv$trp_obj$doSVD()
+    rv$trp_obj$calcBi_df(
       components = c(1, 2, 3),
       group_by = rv$start_group,
       alpha = 1
     )
     # df for variance plot
-    rv$df <- data.frame(comp = 1:length(rv$svdtbl$pcvar),
-                        Variance = rv$svdtbl$pcvar,
-                        p_var = rv$svdtbl$ppcvar,
-                        cp_var = cumsum(rv$svdtbl$ppcvar))
+    rv$df <- data.frame(comp = 1:length(rv$trp_obj$pcvar),
+                        Variance = rv$trp_obj$pcvar,
+                        p_var = rv$trp_obj$ppcvar,
+                        cp_var = cumsum(rv$trp_obj$ppcvar))
     
   })
   
@@ -150,9 +150,9 @@ server <- function(input, output, session) {
   
   observeEvent(req(input$ok, input$rmFctr), ignoreNULL = FALSE, {
     
-    rv$svdtbl$nonFactors <- input$rmFctr
+    rv$trp_obj$nonFactors <- input$rmFctr
     
-    rv$svdtbl$factors <- rv$svdtbl$data %>%
+    rv$trp_obj$factors <- rv$trp_obj$data %>%
       select(-all_of(input$rmFctr)) %>% 
       colnames()
   })
@@ -163,24 +163,24 @@ server <- function(input, output, session) {
     output$group <- renderUI({
       selectInput("group", "grouping variable",
                   selected = input$group,
-                  choices = rv$svdtbl$factors)
+                  choices = rv$trp_obj$factors)
     })
   })
   
   observeEvent(
     c(input$pcs, input$group, input$ok, input$showLabels),
     ignoreInit = TRUE, {
-      rv$svdtbl$data_sanity(rv$data)
-      rv$svdtbl$doSVD()
-      rv$svdtbl$calcBi_df(as.integer(input$pcs), input$group, 1)
-      rv$df <- data.frame(comp = 1:length(rv$svdtbl$pcvar),
-                          Variance = rv$svdtbl$pcvar,
-                          p_var = rv$svdtbl$ppcvar,
-                          cp_var = cumsum(rv$svdtbl$ppcvar)) 
+      # rv$trp_obj$data_sanity(rv$data)
+      rv$trp_obj$doSVD()
+      rv$trp_obj$calcBi_df(as.integer(input$pcs), input$group, 1)
+      rv$df <- data.frame(comp = 1:length(rv$trp_obj$pcvar),
+                          Variance = rv$trp_obj$pcvar,
+                          p_var = rv$trp_obj$ppcvar,
+                          cp_var = cumsum(rv$trp_obj$ppcvar)) 
       
       output$triplot <- plotly::renderPlotly(
         {
-        rv$svdtbl$plot(
+        rv$trp_obj$plot(
           arr.scale = input$arr_scale,
           opacity = input$opacity,
           size = input$size, 

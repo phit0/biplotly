@@ -8,7 +8,7 @@ Authors@R: c(person(given = "Philipp",
            email = "Philippschad93@hotmail.de"))
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.2
+RoxygenNote: 7.3.1
 Licence: MIT
 LazyData: true
 Imports:
@@ -18,5 +18,6 @@ Imports:
 Depends: 
     R (>= 2.10)
 Suggests: 
-    testthat
+    testthat (>= 3.0.0)
 License: MIT + file LICENSE
+Config/testthat/edition: 3
