@@ -150,13 +150,16 @@ trp <- R6::R6Class(
 #'
 #' @param components 
 #' @param group_by 
-#' @param alpha 
+#' @param alpha Exponent of L between 0 and 1. With `alpha = 0` the distance 
+#' between scores are approximations to the *Malhanobis distance* of the original 
+#' data points. With `alpha = 1` the *Euclidean distance is approximated*. 
+#' The default is 0.
 #'
-#' @return
+#' @return A dataframe with Principal component scores (G) and coefficients (H)
 #' @export
 #'
 #' @examples
-    calcBi_df = function(components, group_by, alpha) {
+    calcBi_df = function(components, group_by, alpha = 0) {
       self$pcs <- components
       self$group_by <- group_by
       self$alpha <- alpha
@@ -171,7 +174,7 @@ trp <- R6::R6Class(
       colnames(G) <- paste0("G", components)
       
       # H' = Lambda^(1-alpha)A'
-      H <- as.data.frame(t(diag(l[components]^(1 - alpha)) %*% 
+      H <- as.data.frame(t(diag(l[components]^(1 - alpha)) %*% #FIXME use matices
                              t(A[, components])))
       colnames(H) <- paste0("H", components)
       H <- data.frame(H, variable = colnames(self$X)) #column for variable names
@@ -185,7 +188,7 @@ trp <- R6::R6Class(
       # save
       self$GH <- cbind(G, H)
       # join
-      self$bi_df <- cbind(col, G, H)
+      self$bi_df <- cbind(col, G, H) #FIXME put in list
       # message(colnames(self$bi_df))
       invisible(self)
     },
@@ -223,7 +226,8 @@ trp <- R6::R6Class(
     }
     
   ))
-
+#TODO: Long (but thin) lines after arrows with labels at the end
+#TODO: Labels for scores (points)
 #' PCA bi- and triplots
 #' 
 #' @param data 

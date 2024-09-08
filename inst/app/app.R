@@ -7,8 +7,8 @@ library(dplyr)
 # devtools::load_all("../")
 library(triplotly)
 data("big5")
-
-
+#TODO: Fixed vs hover label switch
+#TODO: Info box with nice markdown docu explaining all the Math
 ui <- fluidPage(
   
   titlePanel("Triplotly - interactive PCA"),
@@ -40,7 +40,7 @@ ui <- fluidPage(
       dropMenu(
         tag = actionButton("figAdj", label = "figure adjustments"),
         sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
-                    min = 0, max = 50, step = 1,value = 35, round = TRUE),
+                    min = 0.0001, max = 0.01, step = 0.0001, value = 0.001),
         # sliderInput(inputId = "alpha", label = "alpha",
         #             min = 0, max = 1, step = 0.02, value = 1, round = TRUE),
         sliderInput(inputId = "size", label = "marker size",
@@ -126,7 +126,7 @@ server <- function(input, output, session) {
     rv$trp_obj$calcBi_df(
       components = c(1, 2, 3),
       group_by = rv$start_group,
-      alpha = 1
+      alpha = 0 #FIXME: Alpha 1 or 0??
     )
     # df for variance plot
     rv$df <- data.frame(comp = 1:length(rv$trp_obj$pcvar),
@@ -172,7 +172,7 @@ server <- function(input, output, session) {
     ignoreInit = TRUE, {
       # rv$trp_obj$data_sanity(rv$data)
       rv$trp_obj$doSVD()
-      rv$trp_obj$calcBi_df(as.integer(input$pcs), input$group, 1)
+      rv$trp_obj$calcBi_df(as.integer(input$pcs), input$group, alpha = 0)
       rv$df <- data.frame(comp = 1:length(rv$trp_obj$pcvar),
                           Variance = rv$trp_obj$pcvar,
                           p_var = rv$trp_obj$ppcvar,
