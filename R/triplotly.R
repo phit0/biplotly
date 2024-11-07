@@ -1,8 +1,8 @@
 #' Triplotly constructor
 #'
 #' @export 
-trp <- R6::R6Class(
-  "trp",
+TRP <- R6::R6Class(
+  "TRP",
   private = list(
     data_sanity = function(data_raw) {
       
@@ -92,22 +92,22 @@ trp <- R6::R6Class(
     group_by = NULL,
     alpha = NULL,
     
-#' init trp object
-#'
-#' @param data A dataframe or tibble to perform PCA 
-#' @param factors The columns of the dataframe that should be excluded from PCA, 
-#' either as integer or string.
-#'
-#' @return An object of class "trp" with different functions to explore the data
-#' via PCA tri- or biplots.
-#' 
-#' @export
-#'
-#' @examples
-#' library(triplotly)
-#' data(iris)
-#' pca1 <- trp$new(iris, factor = "Species")
-#' 
+    #' init trp object
+    #'
+    #' @param data A dataframe or tibble to perform PCA 
+    #' @param factors The columns of the dataframe that should be excluded from PCA, 
+    #' either as integer or string.
+    #'
+    #' @return An object of class "trp" with different functions to explore the data
+    #' via PCA tri- or biplots.
+    #' 
+    #' @export
+    #'
+    #' @examples
+    #' library(triplotly)
+    #' data(iris)
+    #' trp1 <- trp$new(iris, factor = "Species")
+    #' 
     initialize = function(data, factors) {
       
       # assertthat::assert_that(all(factors %in% colnames(data)))
@@ -127,12 +127,16 @@ trp <- R6::R6Class(
     #   self$bi_df <- cbind(self$data[group_by], self$GH)
     #   invisible(self)
     # },
-#' Title
-#'
-#' @return
-#' @export
-#'
-#' @examples
+    #' Title
+    #'
+    #' @return
+    #' @export
+    #'
+    #' @examples
+    #' library(triplotly)
+    #' data(iris)
+    #' trp1 <- trp$new(iris, factor = "Species")
+    #' trp1$doSVD()
     doSVD = function() {
       
       # scale data & calculate single value decomposition
@@ -146,20 +150,30 @@ trp <- R6::R6Class(
       ) * 100
       invisible(self)
     },
-#' Title
-#'
-#' @param components 
-#' @param group_by 
-#' @param alpha Exponent of L between 0 and 1. With `alpha = 0` the distance 
-#' between scores are approximations to the *Malhanobis distance* of the original 
-#' data points. With `alpha = 1` the *Euclidean distance is approximated*. 
-#' The default is 0.
-#'
-#' @return A dataframe with Principal component scores (G) and coefficients (H)
-#' @export
-#'
-#' @examples
-    calcBi_df = function(components, group_by, alpha = 0) {
+    #' Title
+    #'
+    #' @param components 
+    #' @param group_by 
+    #' @param alpha Exponent of L between 0 and 1. With `alpha = 0` the distance 
+    #' between scores are approximations to the *Malhanobis distance* of the original 
+    #' data points. With `alpha = 1` the *Euclidean distance is approximated*. 
+    #' The default is 0.
+    #'
+    #' @return A dataframe with Principal component scores (G) and coefficients (H)
+    #' @export
+    #'
+    #' @examples
+    #' library(triplotly)
+    #' data(iris)
+    #' trp1 <- trp$new(iris, factor = "Species")
+    #' trp1$doSVD()
+    #' trp1$calcBi_df(group_by = "Species", alpha = 1)
+    calcBi_df = function(components, group_by, alpha = 0) { # FIXME: Better function Name!
+      
+        assertthat::assert_that(
+          1 < length(components) & length(components) < 4
+        )
+      
       self$pcs <- components
       self$group_by <- group_by
       self$alpha <- alpha
@@ -192,20 +206,28 @@ trp <- R6::R6Class(
       # message(colnames(self$bi_df))
       invisible(self)
     },
-#' Title
-#'
-#' @param arr.scale 
-#' @param scale.pc 
-#' @param colorPalette 
-#' @param opacity 
-#' @param size 
-#' @param showLabels 
-#' @param title 
-#'
-#' @return
-#' @export
-#'
-#' @examples
+    #' Title
+    #'
+    #' @param arr.scale 
+    #' @param scale.pc 
+    #' @param colorPalette 
+    #' @param opacity 
+    #' @param size 
+    #' @param showLabels 
+    #' @param title 
+    #'
+    #' @return A plotly object
+    #' @export
+    #'
+    #' @examples
+    #' library(triplotly)
+    #' 
+    #' data(iris) 
+    #' trp1 <- TRP$new(iris, factor = "Species")
+    #' trp1$doSVD()
+    #' trp1$calcBi_df(components = c(1, 2), group_by = "Species", alpha = 1)
+    #' p <- trp1$plot(size = 3)
+    #' p
     plot = function(arr.scale = 1,
                     scale.pc = FALSE,
                     colorPalette = "RdYlBu",
@@ -213,15 +235,21 @@ trp <- R6::R6Class(
                     size = 1,
                     showLabels = FALSE,
                     title = "") {
-      invisible(
-        triplotly(self, self$factors, self$group_by, self$pcs, self$alpha,
-                  arr.scale = arr.scale,
-                  scale.pc = scale.pc,
-                  colorPalette = colorPalette,
-                  size = size, 
-                  showLabels = showLabels,
-                  opacity = opacity,
-                  title = title)
+      return(
+        triplotly(
+          trp = self,
+          factors = self$factors,
+          group_by = self$group_by,
+          components = self$pcs,
+          alpha = self$alpha,
+          arr.scale = arr.scale,
+          scale.pc = scale.pc,
+          colorPalette = colorPalette,
+          size = size, 
+          showLabels = showLabels,
+          opacity = opacity,
+          title = title
+        )
       )
     }
     
@@ -231,6 +259,7 @@ trp <- R6::R6Class(
 #' PCA bi- and triplots
 #' 
 #' @param data 
+#' @param trp Optionally provide an object of class TRP (see: [TRP$new()])
 #' @param factors Wich columns of the provided data are used as factors. 
 #' They will not be considered in the PCA but may be used as an argument to
 #'  `group_by` by the user. 
@@ -290,7 +319,7 @@ trp <- R6::R6Class(
 #' \dontrun{
 #'   print(d3)
 #' }
-triplotly <- function(data, factors, group_by, components = c(1,2),
+triplotly <- function(data = NULL, trp = NULL, factors, group_by, components = c(1,2),
                       alpha = 0, title = "", arr.scale = 1, scale.pc = F,
                       colorPalette = "RdYlBu", opacity = 1, size = 1, showLabels) {
   
@@ -300,20 +329,55 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
                                       "Please, select two or three components"))
   assertthat::assert_that(nc == length(unique(components)))
   
-  if (all(class(data) != c("trp", "R6"))) {
+  # checking what is provided
+  if (!is.null(data) & !is.null(trp)) {
+    # data is ignored
+    message("Argument data is ignored")
+    assertthat::assert_that(
+      all(class(trp) == c("TRP", "R6")),
+      msg = "Incorrect trp object supplied")
+    if (is.null(trp$bi_df)) {
+      trp$doSVD()
+      trp$calcBi_df(
+        components = components,
+        group_by = group_by,
+        alpha = alpha
+      )
+    }
+  }
+  else if (is.null(data) & !is.null(trp)) {
+    # trp is used
+    assertthat::assert_that(
+      all(class(trp) == c("TRP", "R6")),
+      msg = "Incorrect trp object supplied")
+    if (is.null(trp$bi_df)) {
+      trp$doSVD()
+      trp$calcBi_df(
+        components = components,
+        group_by = group_by,
+        alpha = alpha
+      )
+    }
+  }
+  else if (!is.null(data) & is.null(trp)) {
+    # data is used
     assertthat::assert_that(is.data.frame(data))
     # create svdtbl for plotting
-    data <- trp$new(data, factors) #FIXME: Separate data and trp_obj
-    data$doSVD()
-    data$calcBi_df(
+    trp <- TRP$new(data, factors)
+    trp$doSVD()
+    trp$calcBi_df(
       components = components,
       group_by = group_by,
       alpha = alpha
     )
   }
+  else {
+    # both missing
+    stop("Please provide either data or a trp object")
+  }
   
-  bi_df <- data$bi_df
-  svd_obj <- data$svd_obj
+  bi_df <- trp$bi_df
+  svd_obj <- trp$svd_obj
   
   # save names 
   name_pc <- paste0("PC ", components)
@@ -323,7 +387,7 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
                        paste0("H", 1:nc), "variable")
   
   # prepare axis labels for plot
-  ppcvar <- data$ppcvar[components]
+  ppcvar <- trp$ppcvar[components]
   if (scale.pc) {
     bi_df$PC_1 <- scale(bi_df$G1)
     bi_df$PC_2 <- scale(bi_df$G2)
@@ -407,19 +471,19 @@ triplotly <- function(data, factors, group_by, components = c(1,2),
                                    x = c(0, bi_df$H1[i] * arr.scale),
                                    y = c(0, bi_df$H2[i] * arr.scale),
                                    z = c(0, bi_df$H3[i] * arr.scale)) %>% 
-       plotly::add_trace(
-         type = "cone",
-         x = bi_df$H1[i] * arr.scale * 1.01,
-         y = bi_df$H2[i] * arr.scale * 1.01,
-         z = bi_df$H3[i] * arr.scale * 1.01,
-         u = bi_df$H1[i] * arr.scale * 0.2,
-         v = bi_df$H2[i] * arr.scale * 0.2,
-         w = bi_df$H3[i] * arr.scale * 0.2,
-         colorscale = list(list(0, '#000000'), list(1, '#000000')),
-         anchor = "tip", #make cone tip be at endpoint
-         hoverinfo = "none",
-         showscale = FALSE
-      )
+        plotly::add_trace(
+          type = "cone",
+          x = bi_df$H1[i] * arr.scale * 1.01,
+          y = bi_df$H2[i] * arr.scale * 1.01,
+          z = bi_df$H3[i] * arr.scale * 1.01,
+          u = bi_df$H1[i] * arr.scale * 0.2,
+          v = bi_df$H2[i] * arr.scale * 0.2,
+          w = bi_df$H3[i] * arr.scale * 0.2,
+          colorscale = list(list(0, '#000000'), list(1, '#000000')),
+          anchor = "tip", #make cone tip be at endpoint
+          hoverinfo = "none",
+          showscale = FALSE
+        )
     }
   }
   invisible(p)

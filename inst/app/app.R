@@ -2,11 +2,12 @@
 library(shiny)
 library(shinyWidgets)
 library(dplyr)
-# remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
-#                         upgrade = "never")
+if(!require(triplotly)) {
+remotes::install_github(repo = "phit0/triplotly", dependencies = TRUE,
+                        upgrade = "never")
+}
 # devtools::load_all("../")
-library(triplotly)
-data("big5")
+# library(triplotly)
 #TODO: Fixed vs hover label switch
 #TODO: Info box with nice markdown docu explaining all the Math
 ui <- fluidPage(
@@ -19,9 +20,9 @@ ui <- fluidPage(
     sidebarPanel(
       fluidRow(
         column(
-          width = 9,
+          width = 5,
           fileInput(inputId = "data", label = "Upload *.csv file",
-                    placeholder = "big5_data", accept = ".csv"),
+                    placeholder = "iris", accept = ".csv"),
         ),
         column(
           width = 1,
@@ -35,12 +36,12 @@ ui <- fluidPage(
       ),
       
       uiOutput("group"),
-      uiOutput("pcs"),
-      
+      uiOutput("pcs"), 
+      uiOutput("pcsError"),      
       dropMenu(
         tag = actionButton("figAdj", label = "figure adjustments"),
         sliderInput(inputId = "arr_scale", label = "scaling factor for arrows",
-                    min = 0.0001, max = 0.01, step = 0.0001, value = 0.001),
+                    min = 0.0001, max = 0.1, step = 0.0001, value = 0.01),
         # sliderInput(inputId = "alpha", label = "alpha",
         #             min = 0, max = 1, step = 0.02, value = 1, round = TRUE),
         sliderInput(inputId = "size", label = "marker size",
@@ -68,10 +69,15 @@ ui <- fluidPage(
 )
 
 #trp$debug("initialize")
+max_pcs <- 3
+min_pcs <- 2
+
 server <- function(input, output, session) {
   
   rv <- reactiveValues()
   
+  
+  # data initialization -----------------------------------------------------
   observeEvent(input$data, ignoreNULL = F, ignoreInit = F, {
     
     upload <- triplotly:::tryUpload(input$data)
@@ -79,13 +85,13 @@ server <- function(input, output, session) {
     rv$start_group <- upload$start_group
     
     # Intit svd object
-    rv$trp_obj <- triplotly::trp$new(
+    rv$trp_obj <- triplotly::TRP$new(
       rv$data,
       factors = upload$factors
     )
     rv$msg <- append(rv$trp_obj$msg, upload$msg)
     rv$uploadsuccess <- upload$success
-
+    
     output$uploadInfo <- renderUI({
       actionButton(
         inputId = "uploadInfo",
@@ -98,16 +104,6 @@ server <- function(input, output, session) {
       selectInput("group", "grouping variable",
                   selected = rv$start_group,
                   choices = rv$trp_obj$factors)
-    })
-    
-    output$pcs <- renderUI({
-      isolate({
-        # reduce number of pcs to select
-        pc0.9 <- min(which(cumsum((rv$trp_obj$svd_obj$d) /
-                                    sum((rv$trp_obj$svd_obj$d))) > 0.9))
-      })
-      selectInput(inputId = "pcs", label = "Select 2 or 3 components",
-                  multiple = TRUE, choices = 1:pc0.9, selected = c(1, 2, 3))
     })
     
     output$rmFctr <- renderUI({
@@ -136,10 +132,27 @@ server <- function(input, output, session) {
     
   })
   
-  observeEvent(input$uploadInfo, ignoreInit = F, {
+  # pc selection ------------------------------------------------------------
+  
+  observe({
+    output$pcs <- renderUI({
+      checkboxGroupInput(
+        inputId = "pcs",
+        label = "select Components",
+        choices = 1:min(length(rv$trp_obj$pcvar), 6),
+        inline = TRUE,
+        selected = c(1, 2, 3))
+    })
+  })
+  observe({
+    output$pcsError <- renderText(rv$pcsError)
+  })
+  
+  
+  observeEvent(input$uploadInfo, ignoreInit = FALSE, {
     
     showModal(modalDialog(
-      title = ifelse(rv$uploadsuccess, 
+      title = ifelse(rv$uploadsuccess,
                      "Upload successful: ", 
                      "Upload failed: "), 
       lapply(rv$msg, function(x) {
@@ -172,7 +185,15 @@ server <- function(input, output, session) {
     ignoreInit = TRUE, {
       # rv$trp_obj$data_sanity(rv$data)
       rv$trp_obj$doSVD()
-      rv$trp_obj$calcBi_df(as.integer(input$pcs), input$group, alpha = 0)
+      tryCatch({
+        rv$trp_obj$calcBi_df(
+          as.integer(input$pcs),
+          input$group,
+          alpha = 0)
+        rv$pcsError <- ""
+      },
+      error = function(e) { rv$pcsError <- e$message }
+      )
       rv$df <- data.frame(comp = 1:length(rv$trp_obj$pcvar),
                           Variance = rv$trp_obj$pcvar,
                           p_var = rv$trp_obj$ppcvar,
@@ -180,13 +201,13 @@ server <- function(input, output, session) {
       
       output$triplot <- plotly::renderPlotly(
         {
-        rv$trp_obj$plot(
-          arr.scale = input$arr_scale,
-          opacity = input$opacity,
-          size = input$size, 
-          showLabels = input$showLabels
-          ) 
-      })
+          rv$trp_obj$plot(
+            arr.scale = input$arr_scale,
+            opacity = input$opacity,
+            size = input$size,
+            showLabels = input$showLabels
+          )
+        })
     })
   
   output$varplot <- plotly::renderPlotly({
